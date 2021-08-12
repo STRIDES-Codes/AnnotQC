@@ -16,14 +16,14 @@ AnnotQC operates from a Jupyter Notebook which can be accessed using the button 
 Since AnnotQC is run using a Binder ***there is no need to install any packages on your own computer***. The Binder link above will open a virtual machine complete with all necessary packages.
 
 A list of packages used in this work and their embedded installation links are below.
-* [pandas](https://pandas.pydata.org/docs/getting_started/install.html) 
-* [numpy](https://numpy.org/install/)
-* [matplotlib](https://matplotlib.org/stable/users/installing.html)
+* [pandas](https://pythonhosted.org/gffutils/index.html) 
+* [numpy](https://numpy.org/about/)
+* [matplotlib](https://matplotlib.org/stable/index.html)
 * [plotly](https://plotly.com/python/getting-started/)
-* [ipywidgets](https://ipywidgets.readthedocs.io/en/latest/user_install.html)
-* [gffutils](https://pythonhosted.org/gffutils/installation.html)
+* [ipywidgets](https://ipywidgets.readthedocs.io/en/latest/)
+* [gffutils](https://github.com/daler/gffutils)
 
 
 ## Team Members:
-Anish Raju, Gabe Needle, Mohammad Sina Shafieinouri, Annan Timmon, and Connor Phillips 
-Lead by: Vamsi Kodali 
+Anish Raju, Gabe Needle, Mohammad Sina Shafieinouri, Annan Timmon, and Connor Phillips  
+**Lead by:** Vamsi Kodali 
