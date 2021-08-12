@@ -8,6 +8,46 @@ import gffutils
 import ipywidgets as widgets
 
 ######################################
+## enter file paths (user interaction)
+######################################
+
+def acceptFiles():
+    instructions = widgets.HTML('Enter the .gff3 and .xml file links or paths into the spaces below. Hit "Enter" after entering each:')
+    display(instructions)
+
+    gff3Text = widgets.Text(
+        value='',
+        placeholder='Insert file path',
+        description='.GFF3 File Path or Link',
+        disabled=False,
+        style= {'description_width': 'initial'}
+
+    )
+    display(gff3Text)
+
+    def gff3Submit(placeHolder):
+        gff3_url = gff3Text.value
+        display(widgets.HTML(".gff3 file location entered."))
+        return gff3_url
+    gff3Text.on_submit(gff3Submit)
+
+    xmlText = widgets.Text(
+        value='',
+        placeholder='Insert file path',
+        description='.XML File Path or Link',
+        disabled=False,
+        style= {'description_width': 'initial'}
+
+    )
+    display(xmlText)
+
+    def xmlSubmit(placeHolder):
+        xml_url = xmlText.value
+        display(widgets.HTML(".xml file location entered."))
+        return xml_url
+    xmlText.on_submit(xmlSubmit)
+
+######################################
 ## parsing xml 
 ######################################
 
@@ -24,6 +64,7 @@ def get_featcounts(annot_xml):
                         for feature in i:
                             if len(feature.attrib.values())>=1:
                                 tem_d[list(feature.attrib.values())[0]]=int(feature.text)
+                                tem_d["Total"]=int(i[0].text)
                         dictionary_attiribute_feature[list(i.attrib.values())[0]] = tem_d
                         tem_d={}
     return (dictionary_attiribute_feature)
@@ -45,6 +86,23 @@ def get_longreadcounts(annot_xml):
                                     long_read_reports[(i.attrib)["run"]][j.tag]=j.text
                                 long_read_reports[(i.attrib)["run"]].pop('run', None)
     return (long_read_reports)
+
+def get_shortreadcounts(annot_xml, tagname):
+    tree = ET.parse(annot_xml)
+    root = tree.getroot()
+    RNA_seq_data={}
+    for c in root.iter():
+        if c.tag == tagname:
+            for c2 in c:
+                if c2.tag == "AssemblyUnit":
+                    for i in c2:
+                        if i.tag == "RunStats":
+                            if i.attrib["run"] == 'ALL': continue
+                            RNA_seq_data[(i.attrib)["run"]] =i.attrib
+                            for j in i:
+                                RNA_seq_data[(i.attrib)["run"]][j.tag]=(j.text)
+                            RNA_seq_data[(i.attrib)["run"]].pop('run', None)
+    return (RNA_seq_data)
 
 ######################################
 ## functions generating plots 
@@ -138,6 +196,65 @@ def get_html(df, width=750, bcolor="#FFFFFF"):
     html += get_style()
     return html
 
+# Wrapper function which returns array of html for transcripts,genes, CDS total/longest/shortest summary respectively
+def summ_dict(length_dict):
+    # transcripts
+    transcripts_html = html_total(length_dict['total transcript:'], "Transcripts")
+    longkey, shortkey = get_keys(length_dict, 'transcript')
+    transcripts_html += html_dict(longkey, shortkey, length_dict)
+    
+    # genes
+    genes_html = html_total(length_dict['total genes:'], "Genes")
+    longkey, shortkey = get_keys(length_dict, 'gene')
+    genes_html += html_dict(longkey, shortkey, length_dict)
+    
+    # CDS
+    CDS_html = html_total(length_dict['total CDS:'], "CDS")
+    longkey, shortkey = get_keys(length_dict, 'CDS')
+    CDS_html += html_dict(longkey, shortkey, length_dict)
+    return [transcripts_html, genes_html, CDS_html]
+
+# Returns html for header listing total
+def html_total(tot, t):
+    totstring = t + " (" + str(tot) + " total)"
+    header = """
+    <header>
+        <h3>{total}</h3>
+    </header>
+    """.format(total = totstring)
+    return header
+
+# Returns which keys correspond to longest/shortest
+def get_keys(length_dict, type):
+    larg, sarg = 'longest '+type, 'shortest '+type
+    for key in length_dict.keys():
+        if larg in key:
+            longkey = key
+        if sarg in key:
+            shortkey = key
+    return longkey, shortkey
+
+# Returns html for table summarizing longest/shortest
+def html_dict(longkey, shortkey, length_dict):
+    longname, shortname = longkey.split(": ")[1], shortkey.split(": ")[1]
+    long, short = length_dict[longkey], length_dict[shortkey]
+    html = """
+    <table width=500px>
+        <tr>
+            <th>Longest</th>
+            <th>Shortest</th>
+        </tr>
+        <tr>
+            <td>{lname}</td>
+            <td>{sname}</td>
+        </tr>
+        <tr>
+            <td>{longest}</td>
+            <td>{shortest}</td>
+        </tr>
+    </table>
+    """.format(lname=longname, sname=shortname, longest=str(long)+" bp", shortest=str(short)+" bp")
+    return html
 
 ######################################
 ## parsing gff3
@@ -354,3 +471,28 @@ def tabulate_longread_aligns(annot_xml):
 
     return pd.DataFrame.from_dict(longread_counts, orient='index')
 
+def tabulate_shortread_aligns(annot_xml):
+    rnaseq_stats = get_shortreadcounts(annot_xml, 'RnaseqAlignReport')
+    
+    for k,v in rnaseq_stats.items():
+        s1 = set(v.keys())
+        s2 = set(['AlignedReadsPct', 'SplicedReadPct'])
+        for i in s1 - s2:
+            v.pop(i, None)
+        for i in s2:
+            v[i] = np.round(float(v[i])/100, 3)
+
+    return pd.DataFrame.from_dict(rnaseq_stats, orient='index')
+
+def tabulate_cage_aligns(annot_xml):
+    rnaseq_stats = get_shortreadcounts(annot_xml, 'CageAlignReport')
+    
+    for k,v in rnaseq_stats.items():
+        s1 = set(v.keys())
+        s2 = set(['AlignedReadsPct', 'SplicedReadPct'])
+        for i in s1 - s2:
+            v.pop(i, None)
+        for i in s2:
+            v[i] = np.round(float(v[i])/100, 3)
+
+    return pd.DataFrame.from_dict(rnaseq_stats, orient='index')
