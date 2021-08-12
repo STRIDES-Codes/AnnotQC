@@ -8,7 +8,20 @@ Genome annotation programs often provide a number of useful metrics to access th
 
 ## How to use our program
 
-1. Clone our repository: ____
+AnnotQC operates from a Jupyter Notebook which can be accessed using the button below: 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/STRIDES-Codes/AnnotQC.git/HEAD)
+
+### Dependencies 
+
+You will need:
+
+*[pandas](https://pandas.pydata.org/docs/getting_started/install.html) 
+*[numpy](https://numpy.org/install/)
+*[matplotlib](https://matplotlib.org/stable/users/installing.html)
+*[plotly](
+*ipywidgets
+*gffutils
+
 
 ## Team Members:
 Anish Raju, Gabe Needle, Mohammad Sina Shafieinouri, Annan Timmon, and Connor Phillips 
