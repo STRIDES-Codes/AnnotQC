@@ -6,6 +6,8 @@ import plotly.express as px
 import math
 import gffutils
 import ipywidgets as widgets
+import subprocess
+
 
 ######################################
 ## enter file paths (user interaction)
@@ -45,13 +47,12 @@ def acceptFiles():
             
             # gff3 file 
             annot_gff = "annotation.gff3"
-#             !curl -Ss {gff3_url} -o {annot_gff}
+            subprocess.run(['curl', '-Ss', gff3_url, '-o', annot_gff])
 
             # annotation report xml 
             annot_xml = "annot_report.xml"
-#             !curl -Ss {xml_url} -o {annot_xml}
-            display(widgets.HTML(("Files loaded.")))
-
+            subprocess.run(['curl', '-Ss', xml_url, '-o', annot_xml])
+            display(widgets.HTML("Files loaded."))
                        
     button.on_click(on_button_clicked)
     display(button, output)
@@ -278,7 +279,7 @@ def create_gff3_db(annot_gff, gff3_db):
         sort_attribute_values=True, 
         merge_strategy = "merge")
 
-  #function version
+#function version
 #longest/shortest function
 def get_length_dict(dbfn):
     db = gffutils.FeatureDB(dbfn)
@@ -298,6 +299,14 @@ def get_length_dict(dbfn):
     unique_exons = set()
     single_exon_genes = 0
     gene_biotype_count = {}
+    transcript_count = 0
+    longest_transcript = 0
+    shortest_transcript = 0
+    transcript_info = {"transcript_len": {},
+                       "exons_per_transcript": {}}
+    single_exon_transcripts = 0
+    l_transcript = ""
+    s_transcript = ""
     gene_info = {"gene_len": {},
                  "subtype": {},
                  "transcripts_per_gene": {},
@@ -327,15 +336,40 @@ def get_length_dict(dbfn):
         # get children
         gene_info["transcripts_per_gene"][gene_name] = 0
         # add up all types of transcripts for a count of transcripts per gene
-        for transcript in ['transcript','guide_RNA','lnc_RNA','mRNA',
-                           'primary_transcript',"rRNA","snRNA","snoRNA"]:
-            current_transcript = list(db.children(gene, featuretype=transcript))
-            gene_info["transcripts_per_gene"][gene_name] += len(current_transcript)
+        for transcript_feature in ['transcript','guide_RNA','lnc_RNA','mRNA',
+                                   'primary_transcript',"rRNA","snRNA","snoRNA"]:
+            current_transcript = db.children(gene, featuretype = transcript_feature)
+            gene_info["transcripts_per_gene"][gene_name] += len(list(current_transcript))
+            for item in db.children(gene, featuretype = transcript_feature):
+                transcript_count += 1
+                transcript_name = None
+                if item.attributes.get('Name', None):
+                    transcript_name = item.attributes.get('Name', None)[0]
+                transcript_len = 0
+                exons = list(db.children(item, featuretype='exon'))
+                unique_exons_per_transcript = set()
+                for exon in db.children(item, featuretype='exon'):
+                    exon_range = (exon.end - exon.start) + 1
+                    transcript_len += exon_range
+                    exon_name = gene.attributes.get('ID', None)[0]
+                    exon_info = (exon.chrom,exon.end,exon.start,exon.strand,exon.strand)
+                    unique_exons_per_transcript.add(exon_info)
+                if len(exons) == 1:
+                        single_exon_transcripts+=1
+                if(longest_transcript < transcript_len):
+                    longest_transcript = transcript_len
+                    l_transcript = transcript_name
+                if(shortest_transcript > transcript_len or shortest_transcript == 0):
+                    shortest_transcript = transcript_len
+                    s_transcript = transcript_name
+                transcript_info["transcript_len"][transcript_name] = transcript_len
+                transcript_info["exons_per_transcript"][transcript_name] = len(unique_exons_per_transcript)
+
 
          #get exon info   
         exons = list(db.children(gene, featuretype='exon'))
         unique_exons_per_gene = set()
-        for exon in exons:
+        for exon in db.children(gene, featuretype='exon'):
             exon_name = gene.attributes.get('ID', None)[0]
             exon_info = (exon.chrom,exon.end,exon.start,exon.strand,exon.strand)
             unique_exons.add(exon_info)
@@ -363,55 +397,19 @@ def get_length_dict(dbfn):
     stats_dict["total genes:"] = gene_count
 
     #add exon info to dict
-    unique_exons = list(set(unique_exons))
-    exon_count = len(unique_exons)
     l_exon = "longest exon: " + str(l_exon)
     s_exon = "shortest exon: " + str(s_exon)
     stats_dict[l_exon] = longest_exon
     stats_dict[s_exon] = shortest_exon
     stats_dict["total exons:"] = exon_count
 
-    #get transcript info from gff file
-    transcript_count = 0
-    longest_transcript = 0
-    shortest_transcript = 0
-    l_transcript = ""
-    s_transcript = ""
-    
-    transcript_info = {"transcript_len": {},
-                   "exons_per_transcript": {}}
-    single_exon_transcripts = 0
-
-    for transcript in db.features_of_type('transcript'):
-        transcript_count += 1
-        transcript_name = transcript.attributes.get('Name', None)[0]
-        transcript_len = 0
-        exons = list(db.children(transcript, featuretype='exon'))
-        unique_exons_per_transcript = set()
-        for exon in exons:
-            exon_range = (exon.end - exon.start) + 1
-            transcript_len += exon_range
-            exon_name = gene.attributes.get('ID', None)[0]
-            exon_info = (exon.chrom,exon.end,exon.start,exon.strand,exon.strand)
-            unique_exons_per_transcript.add(exon_info)
-        if len(exons) == 1:
-                single_exon_transcripts+=1
-        if(longest_transcript < transcript_len):
-            longest_transcript = transcript_len
-            l_transcript = transcript_name
-        if(shortest_transcript > transcript_len or shortest_transcript == 0):
-            shortest_transcript = transcript_len
-            s_transcript = transcript_name
-        transcript_info["transcript_len"][transcript_name] = transcript_len
-        transcript_info["exons_per_transcript"][transcript_name] = len(unique_exons_per_transcript)
-
-    #add transcript info to dict
+       #add transcript info to dict
     l_transcript = "longest transcript: " + str(l_transcript)
     s_transcript = "shortest transcript: " + str(s_transcript)
     stats_dict[l_transcript] = longest_transcript
     stats_dict[s_transcript] = shortest_transcript
     stats_dict["total transcript:"] = transcript_count
-
+ 
     #get CDS info from gff file
     CDS_count = 0
     longest_CDS = 0
@@ -455,8 +453,7 @@ def get_length_dict(dbfn):
     
     return {"stats_dict": stats_dict,
             "gene_info": gene_info,
-            "transcript_info": transcript_info}  
-
+            "transcript_info": transcript_info}
 
 ######################################
 ## executing steps in notebook 
