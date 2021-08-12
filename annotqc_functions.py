@@ -4,7 +4,12 @@ import numpy as np
 import matplotlib as plt
 import plotly.express as px
 import math
+import gffutils
 import ipywidgets as widgets
+
+######################################
+## parsing xml 
+######################################
 
 def get_featcounts(annot_xml):
     tree = ET.parse(annot_xml)
@@ -40,6 +45,10 @@ def get_longreadcounts(annot_xml):
                                     long_read_reports[(i.attrib)["run"]][j.tag]=j.text
                                 long_read_reports[(i.attrib)["run"]].pop('run', None)
     return (long_read_reports)
+
+######################################
+## functions generating plots 
+######################################
 
 def create_barplot(df, name, c):
     # Creating the bar plot 
@@ -130,8 +139,144 @@ def get_html(df, width=750, bcolor="#FFFFFF"):
     return html
 
 
+######################################
+## parsing gff3
+######################################
 
-## functions for plots 
+def create_gff3_db(annot_gff, gff3_db):
+    gffutils.create_db(
+        annot_gff,
+        dbfn=gff3_db,
+        force=True,
+        keep_order=True, 
+        sort_attribute_values=True, 
+        merge_strategy = "merge")
+
+def get_length_dict(dbfn):
+    db = gffutils.FeatureDB(dbfn)
+    stats_dict = {}
+    
+    #get gene info from gff file
+    gene_count = 0
+    longest_gene = 0
+    shortest_gene = 0
+    l_gene = ""
+    s_gene = ""
+    exon_count = 0
+    longest_exon = 0
+    shortest_exon = 0
+    l_exon = ""
+    s_exon = ""
+    
+    for gene in db.features_of_type('gene'):
+        gene_count += 1
+        gene_name = gene.attributes.get('Name', None)[0]
+        gene_range = (gene.end - gene.start)
+        if(longest_gene < gene_range):
+            longest_gene = gene_range
+            l_gene = gene_name
+        if(shortest_gene > gene_range or shortest_gene == 0):
+            shortest_gene = gene_range
+            s_gene = gene_name
+
+         #get exon info   
+        exons = list(db.children(gene, featuretype='exon'))
+        for exon in exons:
+            exon_count += 1
+            exon_name = gene.attributes.get('ID', None)[0]
+        exon_range = (exon.end - exon.start)
+        if(longest_exon < exon_range):
+            longest_exon = exon_range
+            l_exon = exon_name
+        if(shortest_exon > exon_range or shortest_exon == 0):
+            shortest_exon = exon_range
+            s_exon = exon_name
+
+    #add gene info to dict
+    l_gene = "longest gene: " + str(l_gene)
+    s_gene = "shortest gene: " + str(s_gene)
+    stats_dict[l_gene] = longest_gene
+    stats_dict[s_gene] = shortest_gene
+    stats_dict["total genes:"] = gene_count
+
+    #add exon info to dict
+    l_exon = "longest exon: " + str(l_exon)
+    s_exon = "shortest exon: " + str(s_exon)
+    stats_dict[l_exon] = longest_exon
+    stats_dict[s_exon] = shortest_exon
+    stats_dict["total exons:"] = exon_count
+
+    #get transcript info from gff file
+    transcript_count = 0
+    longest_transcript = 0
+    shortest_transcript = 0
+    l_transcript = ""
+    s_transcript = ""
+    
+    for transcript in db.features_of_type('transcript'):
+        transcript_count += 1
+        transcript_name = transcript.attributes.get('Name', None)[0]
+        transcript_len = 0
+        exons = list(db.children(transcript, featuretype='exon'))
+        for exon in exons:
+            exon_range = (exon.end - exon.start)
+            transcript_len += exon_range
+        if(longest_transcript < transcript_len):
+            longest_transcript = transcript_len
+            l_transcript = transcript_name
+        if(shortest_transcript > transcript_len or shortest_transcript == 0):
+            shortest_transcript = transcript_len
+            s_transcript = transcript_name
+
+    #add transcript info to dict
+    l_transcript = "longest transcript: " + str(l_transcript)
+    s_transcript = "shortest transcript: " + str(s_transcript)
+    stats_dict[l_transcript] = longest_transcript
+    stats_dict[s_transcript] = shortest_transcript
+    stats_dict["total transcript:"] = transcript_count
+
+    #get CDS info from gff file
+    CDS_count = 0
+    longest_CDS = 0
+    shortest_CDS = 0
+    l_CDS = ""
+    s_CDS = ""
+    prot_dict = {}
+    for CDS in db.features_of_type('CDS'):
+        CDS_count += 1
+        CDS_name = None
+        if CDS.attributes.get('Name', None):
+            CDS_name = CDS.attributes.get('Name', None)[0]
+        prot_acc = None
+        if CDS.attributes.get('protein_id', None):
+            prot_acc = CDS.attributes.get('protein_id', None)[0]
+        CDS_range = (CDS.end - CDS.start)
+
+        if prot_acc in prot_dict.keys():
+            prot_dict[prot_acc] = prot_dict[prot_acc] + CDS_range
+        else:
+            prot_dict[prot_acc] = CDS_range
+
+        if(longest_CDS < prot_dict[prot_acc]):
+            longest_CDS = prot_dict[prot_acc]
+            l_CDS = prot_acc
+        if(shortest_CDS > prot_dict[prot_acc] or shortest_CDS == 0):
+            shortest_CDS = prot_dict[prot_acc]
+            s_CDS = prot_acc
+
+    #add transcript info to dict
+    l_CDS = "longest CDS: " + str(l_CDS)
+    s_CDS = "shortest CDS: " + str(s_CDS)
+    stats_dict[l_CDS] = longest_CDS
+    stats_dict[s_CDS] = shortest_CDS
+    stats_dict["total CDS:"] = CDS_count
+    
+    return stats_dict
+
+######################################
+## executing steps in notebook 
+######################################
+
 def create_genes_plot(annot_xml):
     feat_counts = get_featcounts(annot_xml)
 
