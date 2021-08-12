@@ -177,7 +177,8 @@ def get_table_data(df):
     return data
 
 # Defines style of bars in cells
-def get_style(r=9, g=220, b=250, a=1): # TODO adjust colors?
+def get_style(r=9, g=220, b=250, a=1):
+    # RGB (9, 220, 250) corresponds to light blue
     style = "<style>"
     style += """
         td {
