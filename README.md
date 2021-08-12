@@ -6,7 +6,7 @@ Genome annotation programs often provide a number of useful metrics to access th
 
 ## How to use our program
 
-AnnotQC operates from a Jupyter Notebook which can be accessed using this button: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/STRIDES-Codes/AnnotQC.git/HEAD?filepath=annotqc.ipynb)
+AnnotQC operates from a Jupyter Notebook which can be accessed using this button: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/STRIDES-Codes/AnnotQC.git/HEAD?filepath=annotqc.ipynb){:target="_blank"}
 
 Upon clicking, a virtual machine will be generated through Binder.
 
