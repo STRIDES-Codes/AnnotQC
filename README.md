@@ -13,9 +13,9 @@ AnnotQC operates from a Jupyter Notebook which can be accessed using the button 
 
 ### Dependencies 
 
-Since AnnotQC is run using a Binder ***there is no need to install any packages on your own computer***. The Binder link above will open a virtual machine complete with all necessary packages. 
+Since AnnotQC is run using a Binder ***there is no need to install any packages on your own computer***. The Binder link above will open a virtual machine complete with all necessary packages.
 
-A list of packages used in this work and their embedded installation links are below 
+A list of packages used in this work and their embedded installation links are below.
 * [pandas](https://pandas.pydata.org/docs/getting_started/install.html) 
 * [numpy](https://numpy.org/install/)
 * [matplotlib](https://matplotlib.org/stable/users/installing.html)
