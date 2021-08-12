@@ -6,12 +6,13 @@ Genome annotation programs often provide a number of useful metrics to access th
 
 ## How to use our program
 
-AnnotQC operates from a Jupyter Notebook which can be accessed using the button below:  
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/STRIDES-Codes/AnnotQC.git/HEAD)
+AnnotQC operates from a Jupyter Notebook which can be accessed using this button: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/STRIDES-Codes/AnnotQC.git/HEAD)
+
+Upon clicking, a virtual machine will be generated through Binder.
 
 ### Dependencies 
 
-Since AnnotQC is run using a Binder ***there is no need to install any packages on your own computer***. The Binder link above will open a virtual machine complete with all necessary packages.
+Since AnnotQC is run using a Binder ***there is no need to install any packages on your own computer***. 
 
 A list of packages used in this work is shown below, click to learn more.
 * [pandas](https://pythonhosted.org/gffutils/index.html) 
